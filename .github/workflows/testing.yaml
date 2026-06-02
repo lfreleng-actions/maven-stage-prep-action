@@ -54,6 +54,11 @@ jobs:
               <packaging>jar</packaging>
           </project>
           POMEOF
+          git config user.email "ci-test@example.org"
+          git config user.name "CI Test"
+          # The action diffs against origin/<gerrit-branch>; make it resolvable
+          # in this self-contained fixture by pointing it at the current HEAD.
+          git update-ref refs/remotes/origin/main HEAD
           git add pom.xml
           git commit -m "Add test POM"
 
