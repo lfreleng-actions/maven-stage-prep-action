@@ -34,6 +34,14 @@ inputs:
     description: "Maven version (used only with versions-plugin method)"
     required: false
     default: "3.9.11"
+  committer-name:
+    description: "Git committer name for the release commit"
+    required: false
+    default: "LF Jenkins CI"
+  committer-email:
+    description: "Git committer email for the release commit"
+    required: false
+    default: "releng+release@linuxfoundation.org"
 
 outputs:
   release-version:
@@ -78,6 +86,8 @@ runs:
         INPUT_VERSION_OVERRIDE: ${{ inputs.version-override }}
         INPUT_PROJECT_NAME: ${{ inputs.project-name }}
         INPUT_GERRIT_BRANCH: ${{ inputs.gerrit-branch }}
+        INPUT_COMMITTER_NAME: ${{ inputs.committer-name }}
+        INPUT_COMMITTER_EMAIL: ${{ inputs.committer-email }}
       # yamllint disable rule:line-length
       run: |
         # SPDX-License-Identifier: Apache-2.0
@@ -129,8 +139,8 @@ runs:
         echo "INFO: Release version: $RELEASE_VERSION"
 
         # Step 4: Git commit the de-SNAPSHOTted POMs
-        git config user.email "askb23@gmail.com"
-        git config user.name "Anil Belur"
+        git config user.email "${INPUT_COMMITTER_EMAIL}"
+        git config user.name "${INPUT_COMMITTER_NAME}"
         git commit -am "Release ${PROJECT_NAME} ${RELEASE_VERSION}"
 
         # Step 5: Create format-patch and bundle

@@ -33,23 +33,23 @@ for downstream tagging.
 ```yaml
 - uses: actions/checkout@v4
   with:
-    fetch-depth: 0
+      fetch-depth: 0
 
 - name: Maven stage prep
   id: stage-prep
   uses: askb/maven-stage-prep-action@main
   with:
-    project-name: 'my-project'
-    gerrit-branch: 'master'
+      project-name: "my-project"
+      gerrit-branch: "master"
 
 - name: Upload artifacts
   uses: actions/upload-artifact@v4
   with:
-    name: staging-artifacts
-    path: |
-      ${{ steps.stage-prep.outputs.patch-path }}
-      ${{ steps.stage-prep.outputs.bundle-path }}
-      ${{ steps.stage-prep.outputs.taglist-path }}
+      name: staging-artifacts
+      path: |
+          ${{ steps.stage-prep.outputs.patch-path }}
+          ${{ steps.stage-prep.outputs.bundle-path }}
+          ${{ steps.stage-prep.outputs.taglist-path }}
 ```
 
 ### Versions-Plugin Method
@@ -57,17 +57,17 @@ for downstream tagging.
 ```yaml
 - uses: actions/checkout@v4
   with:
-    fetch-depth: 0
+      fetch-depth: 0
 
 - name: Maven stage prep
   id: stage-prep
   uses: askb/maven-stage-prep-action@main
   with:
-    project-name: 'my-project'
-    gerrit-branch: 'master'
-    version-method: 'versions-plugin'
-    java-version: '21'
-    mvn-version: '3.9.11'
+      project-name: "my-project"
+      gerrit-branch: "master"
+      version-method: "versions-plugin"
+      java-version: "21"
+      mvn-version: "3.9.11"
 ```
 
 ### With Version Override
@@ -77,25 +77,27 @@ for downstream tagging.
   id: stage-prep
   uses: askb/maven-stage-prep-action@main
   with:
-    project-name: 'my-project'
-    gerrit-branch: 'master'
-    version-method: 'versions-plugin'
-    version-override: '2.0.0'
+      project-name: "my-project"
+      gerrit-branch: "master"
+      version-method: "versions-plugin"
+      version-override: "2.0.0"
 ```
 
 ## Inputs
 
 <!-- markdownlint-disable line-length -->
 
-| Input              | Description                                           | Required | Default   |
-| ------------------ | ----------------------------------------------------- | -------- | --------- |
-| `pom-file`         | Path to root POM file                                 | No       | `pom.xml` |
-| `version-method`   | Method to remove SNAPSHOT: `sed` or `versions-plugin` | No       | `sed`     |
-| `version-override` | Explicit version for versions-plugin `newVersion`     | No       | `""`      |
-| `project-name`     | Project name for patch/bundle file naming             | **Yes**  | —         |
-| `gerrit-branch`    | Branch name for `git format-patch` base ref           | **Yes**  | —         |
-| `java-version`     | OpenJDK version (versions-plugin method)              | No       | `21`      |
-| `mvn-version`      | Maven version (versions-plugin method)                | No       | `3.9.11`  |
+| Input              | Description                                           | Required | Default                              |
+| ------------------ | ----------------------------------------------------- | -------- | ------------------------------------ |
+| `pom-file`         | Path to root POM file                                 | No       | `pom.xml`                            |
+| `version-method`   | Method to remove SNAPSHOT: `sed` or `versions-plugin` | No       | `sed`                                |
+| `version-override` | Explicit version for versions-plugin `newVersion`     | No       | `""`                                 |
+| `project-name`     | Project name for patch/bundle file naming             | **Yes**  | —                                    |
+| `gerrit-branch`    | Branch name for `git format-patch` base ref           | **Yes**  | —                                    |
+| `java-version`     | OpenJDK version (versions-plugin method)              | No       | `21`                                 |
+| `mvn-version`      | Maven version (versions-plugin method)                | No       | `3.9.11`                             |
+| `committer-name`   | Git committer name for the release commit             | No       | `LF Jenkins CI`                      |
+| `committer-email`  | Git committer email for the release commit            | No       | `releng+release@linuxfoundation.org` |
 
 <!-- markdownlint-enable line-length -->
 
@@ -125,10 +127,10 @@ for downstream tagging.
 
 This action replaces the following JJB scripts:
 
-| JJB Script                  | Action Method                         |
-| --------------------------- | ------------------------------------- |
-| `maven-patch-release.sh`    | `version-method: sed`                 |
-| `lf-maven-versions-plugin`  | `version-method: versions-plugin`     |
+| JJB Script                 | Action Method                     |
+| -------------------------- | --------------------------------- |
+| `maven-patch-release.sh`   | `version-method: sed`             |
+| `lf-maven-versions-plugin` | `version-method: versions-plugin` |
 
 The JJB `maven-patch-release.sh` script:
 
