@@ -5,6 +5,11 @@
 
 # 📦 Maven Stage Prep Action
 
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable-next-line MD013 -->
+[![Linux Foundation](https://img.shields.io/badge/Linux-Foundation-blue)](https://linuxfoundation.org/) [![Source Code](https://img.shields.io/badge/GitHub-100000?logo=github&logoColor=white&color=blue)](https://github.com/askb/maven-stage-prep-action) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![pre-commit.ci status badge]][pre-commit.ci results page] [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/askb/maven-stage-prep-action/badge)](https://scorecard.dev/viewer/?uri=github.com/askb/maven-stage-prep-action)
+<!-- prettier-ignore-end -->
+
 Composite GitHub Action to prepare a Maven project for staging release.
 This is the GitHub Actions replacement for JJB's `maven-patch-release.sh` and
 `lf-maven-versions-plugin` scripts.
@@ -47,9 +52,9 @@ for downstream tagging.
   with:
       name: staging-artifacts
       path: |
-          ${{ steps.stage-prep.outputs.patch-path }}
-          ${{ steps.stage-prep.outputs.bundle-path }}
-          ${{ steps.stage-prep.outputs.taglist-path }}
+          ${{ steps.stage-prep.outputs.patch_path }}
+          ${{ steps.stage-prep.outputs.bundle_path }}
+          ${{ steps.stage-prep.outputs.taglist_path }}
 ```
 
 ### Versions-Plugin Method
@@ -105,10 +110,10 @@ for downstream tagging.
 
 | Output            | Description                           |
 | ----------------- | ------------------------------------- |
-| `release-version` | De-SNAPSHOTted release version string |
-| `patch-path`      | Path to git format-patch file         |
-| `bundle-path`     | Path to git bundle file               |
-| `taglist-path`    | Path to `taglist.log` file            |
+| `release_version` | De-SNAPSHOTted release version string |
+| `patch_path`      | Path to git format-patch file         |
+| `bundle_path`     | Path to git bundle file               |
+| `taglist_path`    | Path to `taglist.log` file            |
 
 ## How It Works
 
@@ -147,3 +152,6 @@ git bundle create "$PATCH_DIR/${PROJECT//\//-}.bundle" "origin/${GERRIT_BRANCH}.
 ## License
 
 [Apache-2.0](LICENSES/Apache-2.0.txt)
+
+[pre-commit.ci results page]: https://results.pre-commit.ci/latest/github/askb/maven-stage-prep-action/main
+[pre-commit.ci status badge]: https://results.pre-commit.ci/badge/github/askb/maven-stage-prep-action/main.svg

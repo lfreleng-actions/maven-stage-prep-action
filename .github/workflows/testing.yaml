@@ -74,10 +74,10 @@ jobs:
         shell: bash
         # yamllint disable rule:line-length
         run: |
-          echo "Release version: ${{ steps.stage-prep.outputs.release-version }}"
-          echo "Patch path: ${{ steps.stage-prep.outputs.patch-path }}"
-          echo "Bundle path: ${{ steps.stage-prep.outputs.bundle-path }}"
-          echo "Taglist path: ${{ steps.stage-prep.outputs.taglist-path }}"
+          echo "Release version: ${{ steps.stage-prep.outputs.release_version }}"
+          echo "Patch path: ${{ steps.stage-prep.outputs.patch_path }}"
+          echo "Bundle path: ${{ steps.stage-prep.outputs.bundle_path }}"
+          echo "Taglist path: ${{ steps.stage-prep.outputs.taglist_path }}"
 
           # Verify SNAPSHOT was removed
           if grep -q "SNAPSHOT" pom.xml; then
@@ -87,28 +87,28 @@ jobs:
           echo "✅ SNAPSHOT successfully removed from pom.xml"
 
           # Verify release version output
-          if [ -z "${{ steps.stage-prep.outputs.release-version }}" ]; then
-              echo "ERROR: release-version output is empty"
+          if [ -z "${{ steps.stage-prep.outputs.release_version }}" ]; then
+              echo "ERROR: release_version output is empty"
               exit 1
           fi
-          echo "✅ Release version output set: ${{ steps.stage-prep.outputs.release-version }}"
+          echo "✅ Release version output set: ${{ steps.stage-prep.outputs.release_version }}"
 
           # Verify patch file exists
-          if [ ! -f "${{ steps.stage-prep.outputs.patch-path }}" ]; then
+          if [ ! -f "${{ steps.stage-prep.outputs.patch_path }}" ]; then
               echo "ERROR: Patch file not found"
               exit 1
           fi
           echo "✅ Patch file created"
 
           # Verify bundle file exists
-          if [ ! -f "${{ steps.stage-prep.outputs.bundle-path }}" ]; then
+          if [ ! -f "${{ steps.stage-prep.outputs.bundle_path }}" ]; then
               echo "ERROR: Bundle file not found"
               exit 1
           fi
           echo "✅ Bundle file created"
 
           # Verify taglist file exists
-          if [ ! -f "${{ steps.stage-prep.outputs.taglist-path }}" ]; then
+          if [ ! -f "${{ steps.stage-prep.outputs.taglist_path }}" ]; then
               echo "ERROR: Taglist file not found"
               exit 1
           fi

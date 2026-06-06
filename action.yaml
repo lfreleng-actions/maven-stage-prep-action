@@ -5,7 +5,6 @@
 # maven-stage-prep-action
 name: "📦 Maven Stage Prep"
 description: "Prepare Maven project for staging release"
-author: "Anil Belur <askb23@gmail.com>"
 
 inputs:
   pom-file:
@@ -44,18 +43,18 @@ inputs:
     default: "releng+release@linuxfoundation.org"
 
 outputs:
-  release-version:
+  release_version:
     description: "De-SNAPSHOTted release version string"
-    value: ${{ steps.prep.outputs.release-version }}
-  patch-path:
+    value: ${{ steps.prep.outputs.release_version }}
+  patch_path:
     description: "Path to git format-patch file"
-    value: ${{ steps.prep.outputs.patch-path }}
-  bundle-path:
+    value: ${{ steps.prep.outputs.patch_path }}
+  bundle_path:
     description: "Path to git bundle file"
-    value: ${{ steps.prep.outputs.bundle-path }}
-  taglist-path:
+    value: ${{ steps.prep.outputs.bundle_path }}
+  taglist_path:
     description: "Path to taglist.log file"
-    value: ${{ steps.prep.outputs.taglist-path }}
+    value: ${{ steps.prep.outputs.taglist_path }}
 
 runs:
   using: "composite"
@@ -151,10 +150,10 @@ runs:
             "origin/${GERRIT_BRANCH}..HEAD"
 
         # Step 6: Set outputs
-        echo "release-version=${RELEASE_VERSION}" >> "$GITHUB_OUTPUT"
-        echo "patch-path=${PATCH_DIR}/${SAFE_NAME}.patch" >> "$GITHUB_OUTPUT"
-        echo "bundle-path=${PATCH_DIR}/${SAFE_NAME}.bundle" >> "$GITHUB_OUTPUT"
-        echo "taglist-path=${PATCH_DIR}/taglist.log" >> "$GITHUB_OUTPUT"
+        echo "release_version=${RELEASE_VERSION}" >> "$GITHUB_OUTPUT"
+        echo "patch_path=${PATCH_DIR}/${SAFE_NAME}.patch" >> "$GITHUB_OUTPUT"
+        echo "bundle_path=${PATCH_DIR}/${SAFE_NAME}.bundle" >> "$GITHUB_OUTPUT"
+        echo "taglist_path=${PATCH_DIR}/taglist.log" >> "$GITHUB_OUTPUT"
 
         # Step 7: Summary
         {
