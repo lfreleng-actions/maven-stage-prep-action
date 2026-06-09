@@ -7,7 +7,7 @@
 
 <!-- prettier-ignore-start -->
 <!-- markdownlint-disable-next-line MD013 -->
-[![Linux Foundation](https://img.shields.io/badge/Linux-Foundation-blue)](https://linuxfoundation.org/) [![Source Code](https://img.shields.io/badge/GitHub-100000?logo=github&logoColor=white&color=blue)](https://github.com/askb/maven-stage-prep-action) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![pre-commit.ci status badge]][pre-commit.ci results page] [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/askb/maven-stage-prep-action/badge)](https://scorecard.dev/viewer/?uri=github.com/askb/maven-stage-prep-action)
+[![Linux Foundation](https://img.shields.io/badge/Linux-Foundation-blue)](https://linuxfoundation.org/) [![Source Code](https://img.shields.io/badge/GitHub-100000?logo=github&logoColor=white&color=blue)](https://github.com/lfreleng-actions/maven-stage-prep-action) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![pre-commit.ci status badge]][pre-commit.ci results page] [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/lfreleng-actions/maven-stage-prep-action/badge)](https://scorecard.dev/viewer/?uri=github.com/lfreleng-actions/maven-stage-prep-action)
 <!-- prettier-ignore-end -->
 
 Composite GitHub Action to prepare a Maven project for staging release.
@@ -42,7 +42,7 @@ for downstream tagging.
 
 - name: Maven stage prep
   id: stage-prep
-  uses: askb/maven-stage-prep-action@main
+  uses: lfreleng-actions/maven-stage-prep-action@main
   with:
       project-name: "my-project"
       gerrit-branch: "master"
@@ -66,7 +66,7 @@ for downstream tagging.
 
 - name: Maven stage prep
   id: stage-prep
-  uses: askb/maven-stage-prep-action@main
+  uses: lfreleng-actions/maven-stage-prep-action@main
   with:
       project-name: "my-project"
       gerrit-branch: "master"
@@ -80,7 +80,7 @@ for downstream tagging.
 ```yaml
 - name: Maven stage prep
   id: stage-prep
-  uses: askb/maven-stage-prep-action@main
+  uses: lfreleng-actions/maven-stage-prep-action@main
   with:
       project-name: "my-project"
       gerrit-branch: "master"
@@ -153,5 +153,5 @@ git bundle create "$PATCH_DIR/${PROJECT//\//-}.bundle" "origin/${GERRIT_BRANCH}.
 
 [Apache-2.0](LICENSES/Apache-2.0.txt)
 
-[pre-commit.ci results page]: https://results.pre-commit.ci/latest/github/askb/maven-stage-prep-action/main
-[pre-commit.ci status badge]: https://results.pre-commit.ci/badge/github/askb/maven-stage-prep-action/main.svg
+[pre-commit.ci results page]: https://results.pre-commit.ci/latest/github/lfreleng-actions/maven-stage-prep-action/main
+[pre-commit.ci status badge]: https://results.pre-commit.ci/badge/github/lfreleng-actions/maven-stage-prep-action/main.svg
