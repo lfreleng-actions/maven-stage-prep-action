@@ -167,3 +167,7 @@ runs:
             echo "| **Branch** | ${GERRIT_BRANCH} |"
         } >> "$GITHUB_STEP_SUMMARY"
       # yamllint enable rule:line-length
+
+branding:
+  icon: "package"
+  color: "blue"
