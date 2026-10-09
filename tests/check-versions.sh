@@ -4,13 +4,16 @@
 
 # Checks the versions maven-stage-prep left in a fixture reactor.
 #
-# Usage: check-versions.sh <fixture-repo> <pom-path>=<version>...
+# Usage: check-versions.sh <fixture-repo> <expectation>...
 #
-# Each <pom-path>, relative to <fixture-repo>, must declare <version>
-# as its own version, or inherit it from its parent when it declares
-# none. Every pom.xml the fixture repository tracks is then checked,
-# named or not: none may keep a -SNAPSHOT project or parent version,
-# which a staged release would otherwise carry.
+# An expectation is <pom-path>=<version>: the POM at <pom-path>,
+# relative to <fixture-repo>, must declare <version> as its own
+# version, or inherit it from its parent when it declares none. Or it
+# is <pom-path>@<groupId>:<artifactId>=<version>: that POM's
+# dependency on <groupId>:<artifactId> must name <version>. Every
+# pom.xml the fixture repository tracks is then checked, named or
+# not: none may keep a -SNAPSHOT project or parent version, which a
+# staged release would otherwise carry.
 
 set -euo pipefail
 
@@ -38,18 +41,43 @@ print(parent)
 PY
 }
 
+# Print the version POM "$1" names for its dependency "$2", given as
+# groupId:artifactId, or nothing.
+dependency_version() {
+  python3 - "$1" "$2" <<'PY'
+import sys
+import xml.etree.ElementTree as ET
+
+group, artifact = sys.argv[2].split(":", 1)
+project = ET.parse(sys.argv[1]).getroot()
+for dep in project.iterfind("{*}dependencies/{*}dependency"):
+    if (dep.findtext("{*}groupId", "").strip() == group
+            and dep.findtext("{*}artifactId", "").strip() == artifact):
+        print(dep.findtext("{*}version", "").strip())
+        break
+PY
+}
+
 for expectation in "$@"; do
-  pom="${dir}/${expectation%%=*}"
+  target="${expectation%%=*}"
   want="${expectation#*=}"
+  pom="${dir}/${target%%@*}"
   if [ ! -f "${pom}" ]; then
     fail "${pom}: missing"
     continue
   fi
-  got="$(versions "${pom}" | sed -n 1p)"
+  case "${target}" in
+    *@*)
+      label="${pom} dependency ${target#*@}"
+      got="$(dependency_version "${pom}" "${target#*@}")" ;;
+    *)
+      label="${pom}"
+      got="$(versions "${pom}" | sed -n 1p)" ;;
+  esac
   if [ "${got}" = "${want}" ]; then
-    echo "${pom}: ${got} ✅"
+    echo "${label}: ${got} ✅"
   else
-    fail "${pom}: version '${got}', expected '${want}'"
+    fail "${label}: version '${got}', expected '${want}'"
   fi
 done
 

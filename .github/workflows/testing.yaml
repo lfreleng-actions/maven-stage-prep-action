@@ -159,6 +159,65 @@ jobs:
             outcome: "failure"
             release: ""
             expect: ""
+          # The modules inherit from a parent module, not the root, so
+          # setting the root's version alone leaves them SNAPSHOTs
+          - case: "aggregator"
+            fixture: "aggregator"
+            override: ""
+            outcome: "success"
+            release: "1.0.0"
+            expect: >-
+              pom.xml=1.0.0 parent/pom.xml=1.0.0 core/pom.xml=1.0.0
+              app/pom.xml=1.0.0
+          - case: "aggregator, override"
+            fixture: "aggregator"
+            override: "2.0.0"
+            outcome: "success"
+            release: "2.0.0"
+            # The override is the root's release; modules that do not
+            # inherit the root's version release at their own
+            expect: >-
+              pom.xml=2.0.0 parent/pom.xml=1.0.0 core/pom.xml=1.0.0
+              app/pom.xml=1.0.0
+          # Each module releases at its own version, a reference to
+          # one follows it, and an artifact outside the reactor at the
+          # same SNAPSHOT version stays as it is
+          - case: "independent"
+            fixture: "independent"
+            override: ""
+            outcome: "success"
+            release: "1.0.0"
+            expect: >-
+              pom.xml=1.0.0 a/pom.xml=2.3.0 b/pom.xml=0.5.0
+              c/pom.xml=1.0.0
+              b/pom.xml@org.example.stage:independent-a=2.3.0
+              b/pom.xml@org.example.external:external=2.3.0-SNAPSHOT
+          # The override names the root's release. The modules keep
+          # their own, c included, though it shares the root's version
+          - case: "independent, override"
+            fixture: "independent"
+            override: "9.0.0"
+            outcome: "success"
+            release: "9.0.0"
+            expect: >-
+              pom.xml=9.0.0 a/pom.xml=2.3.0 b/pom.xml=0.5.0
+              c/pom.xml=1.0.0
+              b/pom.xml@org.example.stage:independent-a=2.3.0
+              b/pom.xml@org.example.external:external=2.3.0-SNAPSHOT
+          # A ${revision}${changelist} version, which versions:set on
+          # the root rewrites to the release
+          - case: "CI-friendly"
+            fixture: "cifriendly"
+            override: ""
+            outcome: "success"
+            release: "1.4.0"
+            expect: "pom.xml=1.4.0 module/pom.xml=1.4.0"
+          - case: "CI-friendly, override"
+            fixture: "cifriendly"
+            override: "2.0.0"
+            outcome: "success"
+            release: "2.0.0"
+            expect: "pom.xml=2.0.0 module/pom.xml=2.0.0"
     steps:
       # yamllint disable-line rule:line-length
       - uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1

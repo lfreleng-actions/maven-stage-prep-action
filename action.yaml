@@ -111,32 +111,97 @@ runs:
         # Step 2: Remove -SNAPSHOT from version
         if [ "$VERSION_METHOD" = "versions-plugin" ]; then
             echo "INFO: Using Maven versions-plugin to update versions"
+            # Each reactor module's own version, one per line, as Maven
+            # resolves it, inheritance included. Fails when Maven does, so
+            # a broken run cannot read as a reactor with nothing to set.
+            reactor_versions() {
+                local epom status=0
+                epom="$(mktemp)"
+                if mvn -B -q help:effective-pom -Doutput="$epom" \
+                    -f "$POM_FILE" > /dev/null; then
+                    python3 - "$epom" <<'PY' || status=1
+        import sys
+        import xml.etree.ElementTree as ET
+
+        root = ET.parse(sys.argv[1]).getroot()
+        for project in root.findall("{*}project") or [root]:
+            print((project.findtext("{*}version") or "").strip())
+        PY
+                else
+                    status=1
+                fi
+                rm -f -- "$epom"
+                return "$status"
+            }
+
             # versions:set needs -DnewVersion in batch mode, and Maven runs
             # in batch mode whenever CI is set, as on every runner. Without
-            # an override, take the release version from the root POM's
-            # own version, as the sed method does. -B keeps a local run
+            # an override, the release version is the root POM's own
+            # version, as the sed method takes it. -B keeps a local run
             # from waiting on a prompt too.
-            if [ -n "$VERSION_OVERRIDE" ]; then
-                NEW_VERSION="$VERSION_OVERRIDE"
-            else
-                CURRENT_VERSION=$(mvn -B help:evaluate \
-                    -Dexpression=project.version \
-                    -q -DforceStdout \
-                    -f "$POM_FILE")
-                case "$CURRENT_VERSION" in
-                    *-SNAPSHOT) NEW_VERSION="${CURRENT_VERSION%-SNAPSHOT}" ;;
+            ROOT_VERSION=$(mvn -B help:evaluate \
+                -Dexpression=project.version \
+                -q -DforceStdout \
+                -f "$POM_FILE")
+            if [ -z "$VERSION_OVERRIDE" ]; then
+                case "$ROOT_VERSION" in
+                    *-SNAPSHOT) ;;
                     *)
-                        echo "ERROR: $POM_FILE version '${CURRENT_VERSION}' is not" \
+                        echo "ERROR: $POM_FILE version '${ROOT_VERSION}' is not" \
                             "a SNAPSHOT; set version-override to release it" >&2
                         exit 1
                         ;;
                 esac
             fi
-            echo "INFO: Setting version ${NEW_VERSION}"
+
+            # First the root, as versions:set does by default: the root and
+            # the modules inheriting its version, through any parent chain.
+            # It also rewrites a CI-friendly ${revision} version, which
+            # matching a version string cannot reach. version-override
+            # applies here alone.
+            if [ -n "$VERSION_OVERRIDE" ]; then
+                NEW_VERSION="$VERSION_OVERRIDE"
+            else
+                NEW_VERSION="${ROOT_VERSION%-SNAPSHOT}"
+            fi
+            echo "INFO: Setting ${POM_FILE} version to ${NEW_VERSION}"
             mvn -B versions:set "-DnewVersion=${NEW_VERSION}" \
                 versions:update-child-modules \
                 versions:commit \
                 -f "$POM_FILE"
+
+            # Then every module that does not inherit the root's version: a
+            # module of an aggregator that inherits from a parent module, or
+            # one versioned on its own. Each distinct SNAPSHOT version left
+            # is released by matching it exactly, so each module keeps its
+            # own release number and references to it follow, while a
+            # dependency outside the reactor stays as it is.
+            # processAllModules is left off: it ignores the version match
+            # and gives every module the root's version.
+            ALL_VERSIONS=$(reactor_versions)
+            mapfile -t VERSIONS < <(printf '%s\n' "$ALL_VERSIONS" \
+                | grep -e '-SNAPSHOT$' | sort -u)
+            for OLD_VERSION in "${VERSIONS[@]}"; do
+                NEW_VERSION="${OLD_VERSION%-SNAPSHOT}"
+                echo "INFO: Setting modules at ${OLD_VERSION} to ${NEW_VERSION}"
+                mvn -B versions:set \
+                    -DgroupId='*' -DartifactId='*' \
+                    "-DoldVersion=${OLD_VERSION}" \
+                    "-DnewVersion=${NEW_VERSION}" \
+                    -DgenerateBackupPoms=false \
+                    -f "$POM_FILE"
+            done
+
+            # A module the steps above missed would otherwise go into the
+            # release commit as a SNAPSHOT without failing anything.
+            ALL_VERSIONS=$(reactor_versions)
+            REMAINING=$(printf '%s\n' "$ALL_VERSIONS" \
+                | grep -e '-SNAPSHOT$' | sort -u | tr '\n' ' ') || true
+            if [ -n "$REMAINING" ]; then
+                echo "ERROR: reactor modules still at ${REMAINING}after" \
+                    "versions:set" >&2
+                exit 1
+            fi
         else
             echo "INFO: Using sed to strip -SNAPSHOT from POM files"
             find . -name "*.xml" -print0 | xargs -0 sed -i 's/-SNAPSHOT//g'

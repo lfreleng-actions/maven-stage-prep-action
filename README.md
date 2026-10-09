@@ -120,7 +120,15 @@ for downstream tagging.
 1. **Record commit hash** — writes `<project> <SHA>` to
    `archives/patches/taglist.log`
 2. **Remove SNAPSHOT** — strips `-SNAPSHOT` from all POM `<version>` tags
-   using sed, or uses the Maven versions-plugin for precise version updates
+   using sed, or uses the Maven versions-plugin for precise version updates:
+   it sets the root POM's release version, which the modules inheriting
+   that version follow, CI-friendly `${revision}` versions included. It
+   then releases each SNAPSHOT version left in the reactor, so a module of
+   an aggregator that inherits from a parent module, or one carrying a
+   version of its own, keeps its own release number, and references to
+   it follow. It fails if any module is still a SNAPSHOT.
+   `version-override` sets the root's release version, so it reaches the
+   root and the modules that inherit its version, and no others.
 3. **Extract release version** — reads the de-SNAPSHOTted version from the
    root POM
 4. **Git commit** — commits all POM changes as
