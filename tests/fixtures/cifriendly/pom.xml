@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2026 The Linux Foundation
+
+A CI-friendly version, set through properties. versions:set on the
+root rewrites the expression; matching a version string cannot reach
+it, since the POM holds the expression rather than the version.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.example.stage</groupId>
+  <artifactId>cifriendly-root</artifactId>
+  <version>${revision}${changelist}</version>
+  <packaging>pom</packaging>
+  <properties>
+    <revision>1.4.0</revision>
+    <changelist>-SNAPSHOT</changelist>
+  </properties>
+  <modules>
+    <module>module</module>
+  </modules>
+</project>
