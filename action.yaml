@@ -16,7 +16,8 @@ inputs:
     required: false
     default: "sed"
   version-override:
-    description: "Explicit version for versions-plugin newVersion parameter"
+    # yamllint disable-line rule:line-length
+    description: "Release version for the versions-plugin method; empty removes -SNAPSHOT from the root POM's version"
     required: false
     default: ""
   project-name:
@@ -110,11 +111,29 @@ runs:
         # Step 2: Remove -SNAPSHOT from version
         if [ "$VERSION_METHOD" = "versions-plugin" ]; then
             echo "INFO: Using Maven versions-plugin to update versions"
-            MVN_ARGS=()
+            # versions:set needs -DnewVersion in batch mode, and Maven runs
+            # in batch mode whenever CI is set, as on every runner. Without
+            # an override, take the release version from the root POM's
+            # own version, as the sed method does. -B keeps a local run
+            # from waiting on a prompt too.
             if [ -n "$VERSION_OVERRIDE" ]; then
-                MVN_ARGS+=("-DnewVersion=${VERSION_OVERRIDE}")
+                NEW_VERSION="$VERSION_OVERRIDE"
+            else
+                CURRENT_VERSION=$(mvn -B help:evaluate \
+                    -Dexpression=project.version \
+                    -q -DforceStdout \
+                    -f "$POM_FILE")
+                case "$CURRENT_VERSION" in
+                    *-SNAPSHOT) NEW_VERSION="${CURRENT_VERSION%-SNAPSHOT}" ;;
+                    *)
+                        echo "ERROR: $POM_FILE version '${CURRENT_VERSION}' is not" \
+                            "a SNAPSHOT; set version-override to release it" >&2
+                        exit 1
+                        ;;
+                esac
             fi
-            mvn versions:set "${MVN_ARGS[@]}" \
+            echo "INFO: Setting version ${NEW_VERSION}"
+            mvn -B versions:set "-DnewVersion=${NEW_VERSION}" \
                 versions:update-child-modules \
                 versions:commit \
                 -f "$POM_FILE"

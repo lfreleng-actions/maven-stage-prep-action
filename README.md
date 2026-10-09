@@ -96,7 +96,7 @@ for downstream tagging.
 | ------------------ | ----------------------------------------------------- | -------- | ------------------------------------ |
 | `pom-file`         | Path to root POM file                                 | No       | `pom.xml`                            |
 | `version-method`   | Method to remove SNAPSHOT: `sed` or `versions-plugin` | No       | `sed`                                |
-| `version-override` | Explicit version for versions-plugin `newVersion`     | No       | `""`                                 |
+| `version-override` | Release version; empty drops the root's `-SNAPSHOT`   | No       | `""`                                 |
 | `project-name`     | Project name for patch/bundle file naming             | **Yes**  | —                                    |
 | `gerrit-branch`    | Branch name for `git format-patch` base ref           | **Yes**  | —                                    |
 | `java-version`     | OpenJDK version (versions-plugin method)              | No       | `21`                                 |

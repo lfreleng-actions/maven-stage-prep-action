@@ -123,3 +123,105 @@ jobs:
           STEPS_STAGE_PREP_OUTPUTS_BUNDLE_PATH: ${{ steps.stage-prep.outputs.bundle_path }}
           STEPS_STAGE_PREP_OUTPUTS_TAGLIST_PATH: ${{ steps.stage-prep.outputs.taglist_path }}
           # yamllint enable rule:line-length
+
+  # The versions-plugin method on Maven reactors. A runner sets CI, so
+  # Maven runs in batch mode and versions:set cannot prompt for the
+  # version: each case must work without one. The action runs in the
+  # workspace root, so each fixture becomes the repository there, and
+  # this repository's checkout sits beside it, excluded.
+  test-versions-plugin-method:
+    name: "Test versions-plugin method (${{ matrix.case }})"
+    permissions:
+      contents: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # No override: the release version comes from the root POM
+          - case: "inherited"
+            fixture: "inherited"
+            override: ""
+            outcome: "success"
+            release: "1.2.3"
+            expect: "pom.xml=1.2.3 module/pom.xml=1.2.3"
+          - case: "inherited, override"
+            fixture: "inherited"
+            override: "2.0.0"
+            outcome: "success"
+            release: "2.0.0"
+            expect: "pom.xml=2.0.0 module/pom.xml=2.0.0"
+          # Nothing to de-SNAPSHOT, and no version to release instead
+          - case: "released, no override"
+            fixture: "released"
+            override: ""
+            outcome: "failure"
+            release: ""
+            expect: ""
+    steps:
+      # yamllint disable-line rule:line-length
+      - uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
+      # yamllint disable-line rule:line-length
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          path: "action-src"
+
+      - name: "Commit the fixture as the project"
+        shell: bash
+        env:
+          FIXTURE: action-src/tests/fixtures/${{ matrix.fixture }}
+        run: bash action-src/tests/init-fixture.sh "${FIXTURE}" action-src
+
+      - name: "Run maven-stage-prep (versions-plugin method)"
+        id: stage-prep
+        continue-on-error: ${{ matrix.outcome == 'failure' }}
+        uses: $/
+        with:
+          project-name: "test-project"
+          gerrit-branch: "main"
+          version-method: "versions-plugin"
+          version-override: ${{ matrix.override }}
+
+      - name: "Check the outcome"
+        shell: bash
+        env:
+          WANT: ${{ matrix.outcome }}
+          GOT: ${{ steps.stage-prep.outcome }}
+        run: |
+          if [ "${GOT}" != "${WANT}" ]; then
+            echo "::error::the action's outcome was ${GOT}, expected ${WANT}"
+            exit 1
+          fi
+          echo "Outcome ${GOT} ✅"
+
+      - name: "Check the released versions"
+        if: matrix.outcome == 'success'
+        shell: bash
+        env:
+          EXPECT: ${{ matrix.expect }}
+          WANT_RELEASE: ${{ matrix.release }}
+          RELEASE: ${{ steps.stage-prep.outputs.release_version }}
+          PATCH: ${{ steps.stage-prep.outputs.patch_path }}
+        run: |
+          set -euo pipefail
+          status=0
+          # shellcheck disable=SC2086  # one argument per expectation
+          bash action-src/tests/check-versions.sh . ${EXPECT} || status=1
+          if [ "${RELEASE}" != "${WANT_RELEASE}" ]; then
+            echo "::error::release_version '${RELEASE}', expected" \
+              "'${WANT_RELEASE}'"
+            status=1
+          fi
+          # The release commit must carry the POM changes, which the
+          # patch handed to the stage job holds.
+          if ! grep -q "^Subject: .*Release test-project ${WANT_RELEASE}\$" \
+            "${PATCH}"; then
+            echo "::error::the patch holds no release commit"
+            status=1
+          fi
+          exit "${status}"
