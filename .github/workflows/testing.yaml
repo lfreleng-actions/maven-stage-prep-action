@@ -298,3 +298,123 @@ jobs:
             status=1
           fi
           exit "${status}"
+
+  # The Maven and Java versions the Java/Maven actions share, from
+  # java-workflows, so each action tests against one set of versions
+  versions:
+    name: "Java/Maven versions"
+    permissions: {}
+    # yamllint disable-line rule:line-length
+    uses: lfreleng-actions/java-workflows/.github/workflows/java-maven-versions.yaml@7bb1071df52ffc3fb4c2280511fe257041e259d8  # v0.7.0
+
+  # The versions-plugin method across every Maven line and JDK, on the
+  # two cases most exposed to Maven's own behaviour: modules versioned
+  # on their own, and a CI-friendly ${revision} version, which Maven 4
+  # treats natively.
+  compatibility:
+    # yamllint disable-line rule:line-length
+    name: "Compatibility (${{ matrix.case.name }}, Maven ${{ matrix.maven.line }}, JDK ${{ matrix.java }})"
+    needs: versions
+    permissions:
+      contents: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        maven: ${{ fromJSON(needs.versions.outputs.maven) }}
+        java: ${{ fromJSON(needs.versions.outputs.java) }}
+        case:
+          - name: "independent"
+            fixture: "independent"
+            release: "1.0.0"
+            expect: >-
+              pom.xml=1.0.0 a/pom.xml=2.3.0 b/pom.xml=0.5.0
+              c/pom.xml=1.0.0
+              b/pom.xml@org.example.stage:independent-a=2.3.0
+              b/pom.xml@org.example.external:external=2.3.0-SNAPSHOT
+          - name: "cifriendly"
+            fixture: "cifriendly"
+            release: "1.4.0"
+            expect: "pom.xml=1.4.0 module/pom.xml=1.4.0"
+    steps:
+      # yamllint disable-line rule:line-length
+      - uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+
+      # yamllint disable-line rule:line-length
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          path: "action-src"
+
+      - name: "Commit the fixture as the project"
+        shell: bash
+        env:
+          FIXTURE: action-src/tests/fixtures/${{ matrix.case.fixture }}
+        run: bash action-src/tests/init-fixture.sh "${FIXTURE}" action-src
+
+      - name: "Run maven-stage-prep (versions-plugin method)"
+        id: stage-prep
+        uses: $/
+        with:
+          project-name: "test-project"
+          gerrit-branch: "main"
+          version-method: "versions-plugin"
+          java-version: ${{ matrix.java }}
+          mvn-version: ${{ matrix.maven.version }}
+
+      - name: "Check the released versions"
+        shell: bash
+        env:
+          EXPECT: ${{ matrix.case.expect }}
+          WANT_RELEASE: ${{ matrix.case.release }}
+          RELEASE: ${{ steps.stage-prep.outputs.release_version }}
+          PATCH: ${{ steps.stage-prep.outputs.patch_path }}
+        run: |
+          set -euo pipefail
+          status=0
+          # shellcheck disable=SC2086  # one argument per expectation
+          bash action-src/tests/check-versions.sh . ${EXPECT} || status=1
+          if [ "${RELEASE}" != "${WANT_RELEASE}" ]; then
+            echo "::error::release_version '${RELEASE}', expected" \
+              "'${WANT_RELEASE}'"
+            status=1
+          fi
+          if ! grep -q "^Subject: .*Release test-project ${WANT_RELEASE}\$" \
+            "${PATCH}"; then
+            echo "::error::the patch holds no release commit"
+            status=1
+          fi
+          exit "${status}"
+
+      - name: "Check the toolchain the action left"
+        shell: bash
+        env:
+          WANT_MAVEN: ${{ matrix.maven.version }}
+          WANT_JAVA: ${{ matrix.java }}
+        run: |
+          set -euo pipefail
+          status=0
+          version=$(mvn --version)
+          echo "${version}"
+          if ! grep -qF "Apache Maven ${WANT_MAVEN} (" <<< "${version}"; then
+            echo "::error::Maven is not ${WANT_MAVEN}"
+            status=1
+          fi
+          # The separator after the feature release keeps 2 from
+          # matching 21
+          if ! grep -qE "^Java version: ${WANT_JAVA}[.,]" \
+            <<< "${version}"; then
+            echo "::error::Maven does not run on Java ${WANT_JAVA}"
+            status=1
+          fi
+          case "${JAVA_HOME:-}" in
+            *Temurin*) ;;
+            *)
+              echo "::error::JAVA_HOME '${JAVA_HOME:-}' is not Temurin"
+              status=1
+              ;;
+          esac
+          exit "${status}"
