@@ -258,6 +258,20 @@ jobs:
           fi
           echo "Outcome ${GOT} ✅"
 
+      # Maven must run on the Temurin JDK the action sets up, not one
+      # another setup step makes the default after it
+      - name: "Check the JDK the action left"
+        shell: bash
+        run: |
+          echo "JAVA_HOME=${JAVA_HOME:-}"
+          case "${JAVA_HOME:-}" in
+            *Temurin*) echo "Temurin JDK ✅" ;;
+            *)
+              echo "::error::JAVA_HOME is not a Temurin JDK"
+              exit 1
+              ;;
+          esac
+
       - name: "Check the released versions"
         if: matrix.outcome == 'success'
         shell: bash

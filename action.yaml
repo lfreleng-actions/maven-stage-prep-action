@@ -68,14 +68,30 @@ runs:
         java-version: ${{ inputs.java-version }}
         distribution: "temurin"
 
-    - name: "Setup Maven (versions-plugin only)"
+    # Install Maven alone: s4u/setup-maven-action runs actions/setup-java
+    # again with its own distribution, which would replace the Temurin
+    # JDK set up above as the default.
+    - name: "Check installed Maven (versions-plugin only)"
+      id: maven-installed
       if: ${{ inputs.version-method == 'versions-plugin' }}
+      shell: bash
+      run: |
+        # Report the Maven version on PATH, empty when there is none
+        set -euo pipefail
+        version=""
+        if command -v mvn >/dev/null 2>&1; then
+          version=$(mvn -q -v 2>/dev/null | tr -d '\r\n') || version=""
+        fi
+        echo "Installed Maven: ${version:-none}"
+        echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+    - name: "Setup Maven (versions-plugin only)"
       # yamllint disable-line rule:line-length
-      uses: s4u/setup-maven-action@4a02cbd99769e46198135c31d5097c94618ba3f5 # v1.21.0
+      if: ${{ inputs.version-method == 'versions-plugin' && steps.maven-installed.outputs.version != inputs.mvn-version }}
+      # yamllint disable-line rule:line-length
+      uses: stCarolas/setup-maven@12eb41b233df95d49b0c11fc1b5bc8312e5d4ce0 # v5.1
       with:
-        java-version: ${{ inputs.java-version }}
         maven-version: ${{ inputs.mvn-version }}
-        checkout-enabled: false
 
     - name: "Prepare Maven staging release"
       id: prep
