@@ -136,6 +136,16 @@ for downstream tagging.
 5. **Create patch** — runs `git format-patch` against the Gerrit branch
 6. **Create bundle** — runs `git bundle create` for the release commits
 
+## Supported Maven and Java versions
+
+The versions-plugin method installs the Temurin JDK `java-version` names
+and the Maven release `mvn-version` names, and runs Maven on that JDK.
+CI tests it across every Maven release line and Java feature release in
+the shared matrix, which the `java-maven-versions.yaml` workflow in
+[`lfreleng-actions/java-workflows`](https://github.com/lfreleng-actions/java-workflows)
+defines: Maven 3.9, 3.10 and 4.0 on Java 17 and later. The sed method
+needs neither Java nor Maven.
+
 ## Comparison with JJB
 
 This action replaces the following JJB scripts:
