@@ -93,10 +93,23 @@ runs:
       with:
         maven-version: ${{ inputs.mvn-version }}
 
+    # Resolve the interpreter here rather than take python3 from the
+    # caller's PATH; update-environment off leaves the caller's PATH as
+    # it was.
+    - name: "Setup Python (versions-plugin only)"
+      id: setup-python
+      if: ${{ inputs.version-method == 'versions-plugin' }}
+      # yamllint disable-line rule:line-length
+      uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+      with:
+        python-version: "3.x"
+        update-environment: false
+
     - name: "Prepare Maven staging release"
       id: prep
       shell: bash
       env:
+        PYTHON: ${{ steps.setup-python.outputs.python-path }}
         INPUT_POM_FILE: ${{ inputs.pom-file }}
         INPUT_VERSION_METHOD: ${{ inputs.version-method }}
         INPUT_VERSION_OVERRIDE: ${{ inputs.version-override }}
@@ -135,7 +148,7 @@ runs:
                 epom="$(mktemp)"
                 if mvn -B -q help:effective-pom -Doutput="$epom" \
                     -f "$POM_FILE" > /dev/null; then
-                    python3 - "$epom" <<'PY' || status=1
+                    "$PYTHON" -I - "$epom" <<'PY' || status=1
         import sys
         import xml.etree.ElementTree as ET
 
