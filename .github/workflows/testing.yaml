@@ -124,6 +124,72 @@ jobs:
           STEPS_STAGE_PREP_OUTPUTS_TAGLIST_PATH: ${{ steps.stage-prep.outputs.taglist_path }}
           # yamllint enable rule:line-length
 
+  # The Python version check the versions-plugin method runs before its
+  # POM parser: versions either side of the minimum, then real Pythons
+  # from actions/setup-python, below the minimum and from the range
+  # action.yaml asks for.
+  test-python-check:
+    name: "Test Python version check"
+    permissions:
+      contents: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      # yamllint disable-line rule:line-length
+      - uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43  # v2.22.3
+        with:
+          egress-policy: audit
+
+      # yamllint disable-line rule:line-length
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: "Run the check on versions either side of the minimum"
+        shell: bash
+        run: bash tests/check-python-test.sh
+
+      - name: "Setup Python 3.10"
+        id: python-old
+        # yamllint disable-line rule:line-length
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.10"
+          update-environment: false
+
+      - name: "Setup Python as the action selects it"
+        id: python-selected
+        # yamllint disable-line rule:line-length
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: ">=3.11"
+          update-environment: false
+
+      - name: "Check the refusal and the selection"
+        shell: bash
+        env:
+          OLD: ${{ steps.python-old.outputs.python-version }}
+          SELECTED: ${{ steps.python-selected.outputs.python-version }}
+        run: |
+          set -euo pipefail
+          status=0
+          if bash scripts/check-python.sh "${OLD}"; then
+            echo "::error::the check accepted Python ${OLD}"
+            status=1
+          else
+            echo "Python ${OLD} refused ✅"
+          fi
+          if ! bash scripts/check-python.sh "${SELECTED}"; then
+            echo "::error::the action's range selected Python ${SELECTED}"
+            status=1
+          fi
+          # The test must ask for what the action asks for
+          if ! grep -qF 'python-version: ">=3.11"' action.yaml; then
+            echo "::error::action.yaml no longer selects >=3.11"
+            status=1
+          fi
+          exit "${status}"
+
   # The versions-plugin method on Maven reactors. A runner sets CI, so
   # Maven runs in batch mode and versions:set cannot prompt for the
   # version: each case must work without one. The action runs in the
